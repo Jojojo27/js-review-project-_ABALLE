@@ -1,15 +1,37 @@
-/* SPA page switching */
-.page { display: none; }
-.page.active { display: block; }
+/* ONLY the active page is visible */
+.page { display: none !important; }
+.page.active { display: block !important; }
 
 /* Auth UI rules */
 body.not-authenticated .role-logged-in { display: none !important; }
 body.authenticated .role-logged-out { display: none !important; }
 
-/* Admin-only rules */
-.role-admin { display: none !important; }
-body.is-admin .role-admin { display: block !important; }
+/* Admin-only rules (FOR MENU ITEMS / DASHBOARD LINKS ONLY, NOT PAGES) */
+.role-admin:not(.page) { display: none !important; }
+body.is-admin .role-admin:not(.page) { display: block !important; }
 
 /* Layout */
 main.container { max-width: 900px; }
 .card { border-radius: 10px; }
+
+/* Profile quick cards */
+.quick-card{
+  border: 2px solid #bdbdbd;
+  border-radius: 20px;
+  padding: 40px 20px;
+  text-align: center;
+  background: #fff;
+}
+
+.quick-title{
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-decoration: underline;
+  color: #000;
+}
+
+.quick-title:hover{
+  color: #000;
+  opacity: .8;
+}

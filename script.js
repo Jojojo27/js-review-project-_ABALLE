@@ -1,13 +1,13 @@
-// ====== Helpers (localStorage keys) ======
 const LS_USERS = "fs_users";
 const LS_SESSION = "fs_session";
 const LS_PENDING_VERIFY = "fs_pending_verify";
 
-// ✅ One-time reset switch (IMPORTANT)
-// Set to true ONCE to reseed demo users, then set back to false.
-const FORCE_RESEED_DEMO_USERS = true;
+let currentUser = null;
 
-// ====== Seed demo users (Admin + User) ======
+// Set true ONCE if you need reset; after working, set back to false.
+const FORCE_RESEED_DEMO_USERS = false;
+
+// ====== Seed demo users ======
 function seedDemoUsers() {
   if (FORCE_RESEED_DEMO_USERS) {
     localStorage.removeItem(LS_USERS);
@@ -22,7 +22,7 @@ function seedDemoUsers() {
     {
       firstName: "Admin",
       lastName: "User",
-      email: "admin@example.com",     // ✅ do NOT leave empty
+      email: "admin@example.com",
       username: "admin123",
       password: "Password123!",
       role: "Admin",
@@ -62,79 +62,109 @@ function clearSession() {
   localStorage.removeItem(LS_SESSION);
 }
 
-// ====== UI: Pages ======
-function showPage(pageId) {
+// ====== UI ======
+function hideAllPages() {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+}
+
+function showPage(pageId) {
   const el = document.getElementById(pageId);
   if (el) el.classList.add("active");
 }
 
-// ====== UI: Auth state (body classes) ======
 function applyAuthUI() {
-  const session = getSession();
   const body = document.body;
-
   body.classList.remove("authenticated", "not-authenticated", "is-admin");
 
-  if (!session) {
+  if (!currentUser) {
     body.classList.add("not-authenticated");
     document.getElementById("navUsername").textContent = "User";
     return;
   }
 
   body.classList.add("authenticated");
-  if (session.role === "Admin") body.classList.add("is-admin");
+  if (currentUser.role === "Admin") body.classList.add("is-admin");
 
   document.getElementById("navUsername").textContent =
-    session.firstName || session.username || "User";
+    currentUser.firstName || currentUser.username || "User";
 
   document.getElementById("profName").textContent =
-    `${session.firstName || ""} ${session.lastName || ""}`.trim() || "User";
+    `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim();
 
-  document.getElementById("profEmail").textContent = session.email || "(no email)";
-  document.getElementById("profRole").textContent = session.role || "User";
+  document.getElementById("profEmail").textContent = currentUser.email || "(no email)";
+  document.getElementById("profRole").textContent = currentUser.role || "User";
 }
 
-// ====== Router (hash navigation) ======
-function route() {
-  const hash = (location.hash || "#home").replace("#", "");
-  const session = getSession();
+// ====== Phase 2 Routing ======
+function navigateTo(hash) {
+  window.location.hash = hash;
+}
 
-  const map = {
-    home: "page-home",
-    register: "page-register",
-    verify: "page-verify",
-    login: "page-login",
-    profile: "page-profile",
-    employees: "page-employees",
-    departments: "page-departments",
-    accounts: "page-accounts",
-    requests: "page-requests"
+function handleRouting() {
+  currentUser = getSession();
+  applyAuthUI();
+
+  let hash = window.location.hash;
+
+  if (!hash || hash === "#") {
+    navigateTo("#/");
+    return;
+  }
+
+  if (hash.startsWith("#") && !hash.startsWith("#/")) {
+    navigateTo("#/" + hash.substring(1));
+    return;
+  }
+
+  const routes = {
+    "#/": "page-home",
+    "#/home": "page-home",
+    "#/register": "page-register",
+    "#/verify": "page-verify",
+    "#/login": "page-login",
+    "#/profile": "page-profile",
+    "#/employees": "page-employees",
+    "#/accounts": "page-accounts",
+    "#/departments": "page-departments",
+    "#/requests": "page-requests"
   };
 
-  const needsAuth = ["profile", "employees", "departments", "accounts", "requests"];
-  if (needsAuth.includes(hash) && !session) {
-    location.hash = "#login";
+  const protectedRoutes = new Set([
+    "#/profile",
+    "#/employees",
+    "#/accounts",
+    "#/departments",
+    "#/requests"
+  ]);
+
+  const adminRoutes = new Set([
+    "#/employees",
+    "#/accounts",
+    "#/departments"
+  ]);
+
+  if (protectedRoutes.has(hash) && !currentUser) {
+    navigateTo("#/login");
     return;
   }
 
-  const adminOnly = ["employees", "departments", "accounts"];
-  if (adminOnly.includes(hash) && session?.role !== "Admin") {
+  if (adminRoutes.has(hash) && currentUser?.role !== "Admin") {
     alert("Admin only page.");
-    location.hash = "#profile";
+    navigateTo("#/profile");
     return;
   }
 
-  const pageId = map[hash] || "page-home";
+  hideAllPages();
+  const pageId = routes[hash] || "page-home";
   showPage(pageId);
 
-  if (hash === "verify") {
+  if (hash === "#/verify") {
     const pendingEmail = localStorage.getItem(LS_PENDING_VERIFY) || "---";
     document.getElementById("verifyEmailText").textContent = pendingEmail;
   }
 }
 
-// ====== Register (creates USER account) ======
+// ====== Register ======
 document.getElementById("formRegister").addEventListener("submit", (e) => {
   e.preventDefault();
 
@@ -145,10 +175,9 @@ document.getElementById("formRegister").addEventListener("submit", (e) => {
 
   const users = getUsers();
 
-  // prevent duplicate email
   if (users.some(u => (u.email || "").toLowerCase() === email)) {
     alert("Email already exists. Please login.");
-    location.hash = "#login";
+    navigateTo("#/login");
     return;
   }
 
@@ -166,10 +195,10 @@ document.getElementById("formRegister").addEventListener("submit", (e) => {
 
   saveUsers(users);
   localStorage.setItem(LS_PENDING_VERIFY, email);
-  location.hash = "#verify";
+  navigateTo("#/verify");
 });
 
-// ====== Verify Email (simulate) ======
+// ====== Verify ======
 document.getElementById("btnSimulateVerify").addEventListener("click", () => {
   const email = (localStorage.getItem(LS_PENDING_VERIFY) || "").toLowerCase();
   if (!email) return;
@@ -185,12 +214,13 @@ document.getElementById("btnSimulateVerify").addEventListener("click", () => {
   document.getElementById("verifiedDone").classList.remove("d-none");
 });
 
-// ====== Login (username OR email) ======
+// ====== Login ======
 document.getElementById("formLogin").addEventListener("submit", (e) => {
   e.preventDefault();
 
   const loginId = document.getElementById("loginId").value.trim().toLowerCase();
   const password = document.getElementById("loginPassword").value;
+  const err = document.getElementById("loginError");
 
   const users = getUsers();
 
@@ -200,7 +230,6 @@ document.getElementById("formLogin").addEventListener("submit", (e) => {
     u.password === password
   );
 
-  const err = document.getElementById("loginError");
   err.classList.add("d-none");
   err.textContent = "";
 
@@ -213,7 +242,7 @@ document.getElementById("formLogin").addEventListener("submit", (e) => {
   if (!user.verified) {
     localStorage.setItem(LS_PENDING_VERIFY, user.email || "");
     alert("Please verify your email first (demo).");
-    location.hash = "#verify";
+    navigateTo("#/verify");
     return;
   }
 
@@ -226,20 +255,68 @@ document.getElementById("formLogin").addEventListener("submit", (e) => {
     token: "fake-jwt-" + Math.random().toString(16).slice(2)
   });
 
+  currentUser = getSession();
   applyAuthUI();
-  location.hash = "#profile";
+
+  navigateTo(currentUser.role === "Admin" ? "#/profile" : "#/profile");
 });
 
 // ====== Logout ======
 document.getElementById("menuLogout").addEventListener("click", (e) => {
   e.preventDefault();
   clearSession();
+  currentUser = null;
   applyAuthUI();
-  location.hash = "#home";
+  navigateTo("#/");
+});
+
+// ====== Modal Demo Handlers (Phase 2) ======
+document.getElementById("formAddEmployee").addEventListener("submit", (e) => {
+  e.preventDefault();
+  alert("Employee saved (Phase 2 demo).");
+});
+
+document.getElementById("formAddAccount").addEventListener("submit", (e) => {
+  e.preventDefault();
+  alert("Account saved (Phase 2 demo).");
+});
+
+document.getElementById("formAddDepartment").addEventListener("submit", (e) => {
+  e.preventDefault();
+  alert("Department saved (Phase 2 demo).");
+});
+
+// Requests dynamic items
+function addRequestItemRow() {
+  const container = document.getElementById("reqItems");
+  const row = document.createElement("div");
+  row.className = "d-flex gap-2 align-items-center mb-2";
+
+  row.innerHTML = `
+    <input class="form-control" placeholder="Item name" required />
+    <input class="form-control" type="number" min="1" value="1" style="max-width:90px;" required />
+    <button class="btn btn-outline-danger" type="button">x</button>
+  `;
+
+  row.querySelector("button").addEventListener("click", () => row.remove());
+  container.appendChild(row);
+}
+
+document.getElementById("btnAddReqItem").addEventListener("click", () => {
+  addRequestItemRow();
+});
+
+document.getElementById("modalNewRequest").addEventListener("shown.bs.modal", () => {
+  const container = document.getElementById("reqItems");
+  if (container.children.length === 0) addRequestItemRow();
+});
+
+document.getElementById("formNewRequest").addEventListener("submit", (e) => {
+  e.preventDefault();
+  alert("Request submitted (Phase 2 demo).");
 });
 
 // ====== Init ======
 seedDemoUsers();
-applyAuthUI();
-window.addEventListener("hashchange", route);
-route();
+window.addEventListener("hashchange", handleRouting);
+handleRouting();
