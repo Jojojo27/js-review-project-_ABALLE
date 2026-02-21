@@ -1,3 +1,12 @@
 body {
-  background: #f8f9fa;
+  background: #ffffff;
+}
+
+.navbar .nav-link {
+  opacity: 0.85;
+}
+
+.navbar .nav-link:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
