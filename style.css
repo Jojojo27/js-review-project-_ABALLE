@@ -1,12 +1,15 @@
-body {
-  background: #ffffff;
-}
+/* SPA page switching */
+.page { display: none; }
+.page.active { display: block; }
 
-.navbar .nav-link {
-  opacity: 0.85;
-}
+/* Auth UI rules */
+body.not-authenticated .role-logged-in { display: none !important; }
+body.authenticated .role-logged-out { display: none !important; }
 
-.navbar .nav-link:hover {
-  opacity: 1;
-  text-decoration: underline;
-}
+/* Admin-only rules */
+.role-admin { display: none !important; }
+body.is-admin .role-admin { display: block !important; }
+
+/* Layout */
+main.container { max-width: 900px; }
+.card { border-radius: 10px; }
