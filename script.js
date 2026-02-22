@@ -1,29 +1,53 @@
-const LS_USERS = "fs_users";
-const LS_SESSION = "fs_session";
-const LS_PENDING_VERIFY = "fs_pending_verify";
+// =====================
+// PHASE 3 AUTH SYSTEM (built on PHASE 2 routing + modals)
+// =====================
 
+// ====== PHASE 3 Storage Keys ======
+const LS_DB = "fs_db";                      // stores window.db
+const LS_UNVERIFIED_EMAIL = "unverified_email";
+const LS_AUTH_TOKEN = "auth_token";
+
+// Global current user (Phase 2 requirement)
 let currentUser = null;
 
 // Set true ONCE if you need reset; after working, set back to false.
 const FORCE_RESEED_DEMO_USERS = false;
 
-// ====== Seed demo users ======
-function seedDemoUsers() {
+// ====== PHASE 3 Database ======
+function loadDB() {
+  const raw = localStorage.getItem(LS_DB);
+  if (raw) return JSON.parse(raw);
+  return {
+    accounts: []
+  };
+}
+
+function saveDB() {
+  localStorage.setItem(LS_DB, JSON.stringify(window.db));
+}
+
+window.db = loadDB();
+
+function normalizeEmail(email) {
+  return (email || "").trim().toLowerCase();
+}
+
+// ====== Seed demo accounts (Admin + User) ======
+function seedDemoAccounts() {
   if (FORCE_RESEED_DEMO_USERS) {
-    localStorage.removeItem(LS_USERS);
-    localStorage.removeItem(LS_SESSION);
-    localStorage.removeItem(LS_PENDING_VERIFY);
+    localStorage.removeItem(LS_DB);
+    localStorage.removeItem(LS_AUTH_TOKEN);
+    localStorage.removeItem(LS_UNVERIFIED_EMAIL);
+    window.db = loadDB();
   }
 
-  const existing = JSON.parse(localStorage.getItem(LS_USERS) || "[]");
-  if (existing.length > 0) return;
+  if (window.db.accounts.length > 0) return;
 
-  const demo = [
+  window.db.accounts.push(
     {
       firstName: "Admin",
       lastName: "User",
       email: "admin@example.com",
-      username: "admin123",
       password: "Password123!",
       role: "Admin",
       verified: true
@@ -32,34 +56,13 @@ function seedDemoUsers() {
       firstName: "Normal",
       lastName: "User",
       email: "user@example.com",
-      username: "user1",
       password: "user123",
       role: "User",
       verified: true
     }
-  ];
+  );
 
-  localStorage.setItem(LS_USERS, JSON.stringify(demo));
-}
-
-function getUsers() {
-  return JSON.parse(localStorage.getItem(LS_USERS) || "[]");
-}
-
-function saveUsers(users) {
-  localStorage.setItem(LS_USERS, JSON.stringify(users));
-}
-
-function getSession() {
-  return JSON.parse(localStorage.getItem(LS_SESSION) || "null");
-}
-
-function setSession(session) {
-  localStorage.setItem(LS_SESSION, JSON.stringify(session));
-}
-
-function clearSession() {
-  localStorage.removeItem(LS_SESSION);
+  saveDB();
 }
 
 // ====== UI ======
@@ -72,37 +75,66 @@ function showPage(pageId) {
   if (el) el.classList.add("active");
 }
 
-function applyAuthUI() {
+// =====================
+// D) AUTH STATE MANAGEMENT (Phase 3 required)
+// =====================
+function setAuthState(isAuth, user = null) {
   const body = document.body;
   body.classList.remove("authenticated", "not-authenticated", "is-admin");
 
-  if (!currentUser) {
+  if (!isAuth || !user) {
+    currentUser = null;
     body.classList.add("not-authenticated");
-    document.getElementById("navUsername").textContent = "User";
+
+    const navUsername = document.getElementById("navUsername");
+    if (navUsername) navUsername.textContent = "User";
     return;
   }
 
+  currentUser = user;
   body.classList.add("authenticated");
-  if (currentUser.role === "Admin") body.classList.add("is-admin");
+  if (user.role === "Admin") body.classList.add("is-admin");
 
-  document.getElementById("navUsername").textContent =
-    currentUser.firstName || currentUser.username || "User";
+  // Navbar
+  const navUsername = document.getElementById("navUsername");
+  if (navUsername) navUsername.textContent = user.firstName || user.email || "User";
 
-  document.getElementById("profName").textContent =
-    `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim();
+  // Profile fields
+  const profName = document.getElementById("profName");
+  const profEmail = document.getElementById("profEmail");
+  const profRole = document.getElementById("profRole");
 
-  document.getElementById("profEmail").textContent = currentUser.email || "(no email)";
-  document.getElementById("profRole").textContent = currentUser.role || "User";
+  if (profName) profName.textContent = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email;
+  if (profEmail) profEmail.textContent = user.email || "(no email)";
+  if (profRole) profRole.textContent = user.role || "User";
 }
 
-// ====== Phase 2 Routing ======
+// Restore auth from token
+function restoreAuthFromToken() {
+  const tokenEmail = normalizeEmail(localStorage.getItem(LS_AUTH_TOKEN));
+  if (!tokenEmail) {
+    setAuthState(false);
+    return;
+  }
+
+  const acc = window.db.accounts.find(a => normalizeEmail(a.email) === tokenEmail);
+  if (!acc) {
+    localStorage.removeItem(LS_AUTH_TOKEN);
+    setAuthState(false);
+    return;
+  }
+
+  setAuthState(true, acc);
+}
+
+// ====== PHASE 2 Routing ======
 function navigateTo(hash) {
   window.location.hash = hash;
 }
 
 function handleRouting() {
-  currentUser = getSession();
-  applyAuthUI();
+  // Always sync auth state from token
+  restoreAuthFromToken();
 
   let hash = window.location.hash;
 
@@ -120,7 +152,7 @@ function handleRouting() {
     "#/": "page-home",
     "#/home": "page-home",
     "#/register": "page-register",
-    "#/verify": "page-verify",
+    "#/verify-email": "page-verify-email",
     "#/login": "page-login",
     "#/profile": "page-profile",
     "#/employees": "page-employees",
@@ -143,11 +175,13 @@ function handleRouting() {
     "#/departments"
   ]);
 
+  // Redirect unauthenticated users away from protected routes
   if (protectedRoutes.has(hash) && !currentUser) {
     navigateTo("#/login");
     return;
   }
 
+  // Block non-admins from admin routes
   if (adminRoutes.has(hash) && currentUser?.role !== "Admin") {
     alert("Admin only page.");
     navigateTo("#/profile");
@@ -158,137 +192,149 @@ function handleRouting() {
   const pageId = routes[hash] || "page-home";
   showPage(pageId);
 
-  if (hash === "#/verify") {
-    const pendingEmail = localStorage.getItem(LS_PENDING_VERIFY) || "---";
-    document.getElementById("verifyEmailText").textContent = pendingEmail;
+  // Verify email page text
+  if (hash === "#/verify-email") {
+    const pendingEmail = localStorage.getItem(LS_UNVERIFIED_EMAIL) || "---";
+    const verifySpan = document.getElementById("verifyEmailText");
+    if (verifySpan) verifySpan.textContent = pendingEmail;
   }
 }
 
-// ====== Register ======
-document.getElementById("formRegister").addEventListener("submit", (e) => {
+// =====================
+// A) REGISTRATION (Phase 3 required)
+// =====================
+document.getElementById("formRegister")?.addEventListener("submit", (e) => {
   e.preventDefault();
 
   const firstName = document.getElementById("regFirst").value.trim();
   const lastName = document.getElementById("regLast").value.trim();
-  const email = document.getElementById("regEmail").value.trim().toLowerCase();
+  const email = normalizeEmail(document.getElementById("regEmail").value);
   const password = document.getElementById("regPassword").value;
 
-  const users = getUsers();
+  if (password.length < 6) {
+    alert("Password must be at least 6 characters.");
+    return;
+  }
 
-  if (users.some(u => (u.email || "").toLowerCase() === email)) {
+  // Check if email already exists
+  const exists = window.db.accounts.some(a => normalizeEmail(a.email) === email);
+  if (exists) {
     alert("Email already exists. Please login.");
     navigateTo("#/login");
     return;
   }
 
-  const username = email.split("@")[0];
-
-  users.push({
+  // Save new account
+  window.db.accounts.push({
     firstName,
     lastName,
     email,
-    username,
     password,
     role: "User",
     verified: false
   });
 
-  saveUsers(users);
-  localStorage.setItem(LS_PENDING_VERIFY, email);
-  navigateTo("#/verify");
+  saveDB();
+
+  // Store email in unverified_email
+  localStorage.setItem(LS_UNVERIFIED_EMAIL, email);
+
+  // Navigate to verify-email
+  navigateTo("#/verify-email");
 });
 
-// ====== Verify ======
-document.getElementById("btnSimulateVerify").addEventListener("click", () => {
-  const email = (localStorage.getItem(LS_PENDING_VERIFY) || "").toLowerCase();
+// =====================
+// B) EMAIL VERIFICATION (Simulated) (Phase 3 required)
+// =====================
+document.getElementById("btnSimulateVerify")?.addEventListener("click", () => {
+  const email = normalizeEmail(localStorage.getItem(LS_UNVERIFIED_EMAIL));
   if (!email) return;
 
-  const users = getUsers();
-  const idx = users.findIndex(u => (u.email || "").toLowerCase() === email);
-
-  if (idx >= 0) {
-    users[idx].verified = true;
-    saveUsers(users);
+  const acc = window.db.accounts.find(a => normalizeEmail(a.email) === email);
+  if (!acc) {
+    alert("Account not found.");
+    return;
   }
 
-  document.getElementById("verifiedDone").classList.remove("d-none");
+  acc.verified = true;
+  saveDB();
+
+  localStorage.removeItem(LS_UNVERIFIED_EMAIL);
+
+  const done = document.getElementById("verifiedDone");
+  if (done) done.classList.remove("d-none");
+
+  navigateTo("#/login");
 });
 
-// ====== Login ======
-document.getElementById("formLogin").addEventListener("submit", (e) => {
+// =====================
+// C) LOGIN (Email + Password, verified:true) (Phase 3 required)
+// =====================
+document.getElementById("formLogin")?.addEventListener("submit", (e) => {
   e.preventDefault();
 
-  const loginId = document.getElementById("loginId").value.trim().toLowerCase();
+  const email = normalizeEmail(document.getElementById("loginId").value);
   const password = document.getElementById("loginPassword").value;
   const err = document.getElementById("loginError");
-
-  const users = getUsers();
-
-  const user = users.find(u =>
-    ((u.username || "").toLowerCase() === loginId ||
-     (u.email || "").toLowerCase() === loginId) &&
-    u.password === password
-  );
 
   err.classList.add("d-none");
   err.textContent = "";
 
-  if (!user) {
-    err.textContent = "Invalid username/email or password.";
+  const acc = window.db.accounts.find(a =>
+    normalizeEmail(a.email) === email &&
+    a.password === password &&
+    a.verified === true
+  );
+
+  if (!acc) {
+    err.textContent = "Invalid email/password OR email not verified.";
     err.classList.remove("d-none");
     return;
   }
 
-  if (!user.verified) {
-    localStorage.setItem(LS_PENDING_VERIFY, user.email || "");
-    alert("Please verify your email first (demo).");
-    navigateTo("#/verify");
-    return;
-  }
+  // Save auth token = email
+  localStorage.setItem(LS_AUTH_TOKEN, acc.email);
 
-  setSession({
-    email: user.email,
-    username: user.username,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-    token: "fake-jwt-" + Math.random().toString(16).slice(2)
-  });
+  // Set auth state
+  setAuthState(true, acc);
 
-  currentUser = getSession();
-  applyAuthUI();
-
-  navigateTo(currentUser.role === "Admin" ? "#/profile" : "#/profile");
+  // Navigate to profile
+  navigateTo("#/profile");
 });
 
-// ====== Logout ======
-document.getElementById("menuLogout").addEventListener("click", (e) => {
+// =====================
+// E) LOGOUT (Phase 3 required)
+// =====================
+document.getElementById("menuLogout")?.addEventListener("click", (e) => {
   e.preventDefault();
-  clearSession();
-  currentUser = null;
-  applyAuthUI();
+  localStorage.removeItem(LS_AUTH_TOKEN);
+  setAuthState(false);
   navigateTo("#/");
 });
 
-// ====== Modal Demo Handlers (Phase 2) ======
-document.getElementById("formAddEmployee").addEventListener("submit", (e) => {
+// =====================
+// Modal Demo Handlers (keep)
+// =====================
+document.getElementById("formAddEmployee")?.addEventListener("submit", (e) => {
   e.preventDefault();
-  alert("Employee saved (Phase 2 demo).");
+  alert("Employee saved (demo).");
 });
 
-document.getElementById("formAddAccount").addEventListener("submit", (e) => {
+document.getElementById("formAddAccount")?.addEventListener("submit", (e) => {
   e.preventDefault();
-  alert("Account saved (Phase 2 demo).");
+  alert("Account saved (demo).");
 });
 
-document.getElementById("formAddDepartment").addEventListener("submit", (e) => {
+document.getElementById("formAddDepartment")?.addEventListener("submit", (e) => {
   e.preventDefault();
-  alert("Department saved (Phase 2 demo).");
+  alert("Department saved (demo).");
 });
 
 // Requests dynamic items
 function addRequestItemRow() {
   const container = document.getElementById("reqItems");
+  if (!container) return;
+
   const row = document.createElement("div");
   row.className = "d-flex gap-2 align-items-center mb-2";
 
@@ -302,21 +348,23 @@ function addRequestItemRow() {
   container.appendChild(row);
 }
 
-document.getElementById("btnAddReqItem").addEventListener("click", () => {
+document.getElementById("btnAddReqItem")?.addEventListener("click", () => {
   addRequestItemRow();
 });
 
-document.getElementById("modalNewRequest").addEventListener("shown.bs.modal", () => {
+document.getElementById("modalNewRequest")?.addEventListener("shown.bs.modal", () => {
   const container = document.getElementById("reqItems");
-  if (container.children.length === 0) addRequestItemRow();
+  if (container && container.children.length === 0) addRequestItemRow();
 });
 
-document.getElementById("formNewRequest").addEventListener("submit", (e) => {
+document.getElementById("formNewRequest")?.addEventListener("submit", (e) => {
   e.preventDefault();
-  alert("Request submitted (Phase 2 demo).");
+  alert("Request submitted (demo).");
 });
 
-// ====== Init ======
-seedDemoUsers();
+// =====================
+// INIT
+// =====================
+seedDemoAccounts();
 window.addEventListener("hashchange", handleRouting);
 handleRouting();
