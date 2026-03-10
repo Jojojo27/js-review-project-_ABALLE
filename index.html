@@ -14,7 +14,7 @@
   <!-- NAVBAR -->
   <nav class="navbar navbar-dark bg-dark navbar-expand-lg">
     <div class="container">
-      <a class="navbar-brand fw-bold" href="#/" id="navBrand">Full-Stack App</a>
+      <a class="navbar-brand fw-bold" href="#/home" id="navBrand">Full-Stack App</a>
 
       <!-- Logged out -->
       <div class="ms-auto d-flex gap-3 role-logged-out">
@@ -40,7 +40,6 @@
           <li><a class="dropdown-item text-danger" href="#" id="menuLogout">Logout</a></li>
         </ul>
       </div>
-
     </div>
   </nav>
 
@@ -55,7 +54,7 @@
         <li>Email registration + fake verification</li>
         <li>Login with token simulation</li>
         <li>Role-based UI (Admin/User)</li>
-        <li>Employees / Accounts / Departments / Requests pages</li>
+        <li>Data persistence using localStorage</li>
       </ul>
 
       <div class="alert alert-info d-flex align-items-center gap-2" role="alert">
@@ -63,26 +62,12 @@
         <div><b>Note:</b> All data is stored in <span class="text-danger fw-bold">localStorage</span>.</div>
       </div>
 
-      <!-- Logged-out CTA -->
-      <a class="btn btn-primary role-logged-out" href="#/login" id="btnGetStarted">Get Started →</a>
-
-      <!-- Admin Home Dashboard (shows only for Admin) -->
-      <div class="role-logged-in role-admin mt-4">
-        <h3 class="fw-bold">Admin Home</h3>
-        <div class="list-group">
-          <a class="list-group-item list-group-item-action" href="#/profile">Profile</a>
-          <a class="list-group-item list-group-item-action" href="#/employees">Employees</a>
-          <a class="list-group-item list-group-item-action" href="#/accounts">Accounts</a>
-          <a class="list-group-item list-group-item-action" href="#/departments">Departments</a>
-          <a class="list-group-item list-group-item-action" href="#/requests">My Requests</a>
-        </div>
-      </div>
+      <a class="btn btn-primary" href="#/login" id="btnGetStarted">Get Started →</a>
     </section>
 
     <!-- REGISTER -->
     <section class="page" id="page-register">
       <h3 class="fw-bold">Register Account</h3>
-
       <div class="card p-3">
         <form id="formRegister" class="row g-3">
           <div class="col-md-6">
@@ -101,22 +86,22 @@
 
           <div class="col-12">
             <label class="form-label">Password (min 6 chars)</label>
-            <input class="form-control" id="regPassword" type="password" minlength="6" required />
+            <input class="form-control" id="regPassword" type="password" required />
           </div>
 
           <div class="col-12 d-flex gap-2">
             <button class="btn btn-success" type="submit">Sign Up</button>
-            <a class="btn btn-secondary" href="#/">Cancel</a>
+            <a class="btn btn-secondary" href="#/home">Cancel</a>
           </div>
         </form>
       </div>
     </section>
 
-    <!-- VERIFY EMAIL (PHASE 3 ROUTE: #/verify-email) -->
+    <!-- VERIFY EMAIL -->
     <section class="page" id="page-verify-email">
       <h3 class="fw-bold">Verify Your Email</h3>
 
-      <div class="alert alert-success" id="verifyMsg">
+      <div class="alert alert-success">
         ✅ A verification link has been sent to <b><span id="verifyEmailText">---</span></b>.
       </div>
 
@@ -132,7 +117,7 @@
       </div>
     </section>
 
-    <!-- LOGIN (Email + Password only for Phase 3) -->
+    <!-- LOGIN -->
     <section class="page" id="page-login">
       <h3 class="fw-bold">Login</h3>
 
@@ -148,107 +133,131 @@
           </div>
           <div class="col-12 d-flex gap-2">
             <button class="btn btn-primary" type="submit">Login</button>
-            <a class="btn btn-secondary" href="#/">Cancel</a>
+            <a class="btn btn-secondary" href="#/home">Cancel</a>
           </div>
         </form>
 
         <div class="alert alert-danger mt-3 d-none" id="loginError"></div>
+
+        
       </div>
     </section>
 
-    <!-- PROFILE (with routing links + popup buttons) -->
+    <!-- PROFILE -->
     <section class="page" id="page-profile">
       <h3 class="fw-bold">My Profile</h3>
 
-      <div class="card p-3 mb-4">
+      <div class="card p-3">
         <div class="fw-bold" id="profName">---</div>
         <div>Email: <span id="profEmail">---</span></div>
         <div>Role: <span id="profRole">---</span></div>
         <button class="btn btn-outline-primary btn-sm mt-2" disabled>Edit Profile</button>
       </div>
 
-      <div class="row g-4">
+      <!-- Admin Dashboard Quick Cards - Horizontally aligned -->
+      <!-- First row: EMPLOYEES and ACCOUNTS -->
+      <div class="row g-4 mt-3 role-admin">
         <div class="col-md-6">
           <div class="quick-card">
             <a class="quick-title" href="#/employees">EMPLOYEES</a>
-            <button class="btn btn-success btn-sm mt-3" type="button"
-                    data-bs-toggle="modal" data-bs-target="#modalAddEmployee">
-              + Add Employee
-            </button>
+            <div class="mt-3">
+              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalEmployee">+ Add Employee</button>
+            </div>
           </div>
         </div>
 
         <div class="col-md-6">
           <div class="quick-card">
             <a class="quick-title" href="#/accounts">ACCOUNTS</a>
-            <button class="btn btn-success btn-sm mt-3" type="button"
-                    data-bs-toggle="modal" data-bs-target="#modalAddAccount">
-              + Add Account
-            </button>
+            <div class="mt-3">
+              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAccount">+ Add Account</button>
+            </div>
           </div>
         </div>
+      </div>
 
+      <!-- Second row: DEPARTMENTS and REQUESTS -->
+      <div class="row g-4 mt-3 role-admin">
         <div class="col-md-6">
           <div class="quick-card">
             <a class="quick-title" href="#/departments">DEPARTMENTS</a>
-            <button class="btn btn-success btn-sm mt-3" type="button"
-                    data-bs-toggle="modal" data-bs-target="#modalAddDepartment">
-              + Add Department
-            </button>
+            <div class="mt-3">
+              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalDepartment">+ Add Department</button>
+            </div>
           </div>
         </div>
 
         <div class="col-md-6">
           <div class="quick-card">
             <a class="quick-title" href="#/requests">REQUESTS</a>
-            <button class="btn btn-success btn-sm mt-3" type="button"
-                    data-bs-toggle="modal" data-bs-target="#modalNewRequest">
-              + New Request
-            </button>
+            <div class="mt-3">
+              <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNewRequest">+ New Request</button>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- EMPLOYEES -->
-    <section class="page" id="page-employees">
+    <!-- EMPLOYEES (ADMIN) -->
+    <section class="page role-admin" id="page-employees">
       <div class="d-flex align-items-center justify-content-between">
         <h3 class="fw-bold mb-0">Employees</h3>
-        <button class="btn btn-success btn-sm" type="button"
-                data-bs-toggle="modal" data-bs-target="#modalAddEmployee">
-          + Add Employee
-        </button>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalEmployee">+ Add Employee</button>
       </div>
+
       <div class="card p-3 mt-3">
-        <div class="text-muted">(Phase 3) CRUD display can be added next phase.</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ID</th><th>Name</th><th>Position</th><th>Department</th><th>Hire Date</th><th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tblEmployees"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- ACCOUNTS -->
-    <section class="page" id="page-accounts">
+    <!-- ACCOUNTS (ADMIN) -->
+    <section class="page role-admin" id="page-accounts">
       <div class="d-flex align-items-center justify-content-between">
         <h3 class="fw-bold mb-0">Accounts</h3>
-        <button class="btn btn-success btn-sm" type="button"
-                data-bs-toggle="modal" data-bs-target="#modalAddAccount">
-          + Add Account
-        </button>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalAccount">+ Add Account</button>
       </div>
+
       <div class="card p-3 mt-3">
-        <div class="text-muted">(Phase 3) CRUD display can be added next phase.</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Name</th><th>Email</th><th>Role</th><th>Verified</th><th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tblAccounts"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- DEPARTMENTS -->
-    <section class="page" id="page-departments">
+    <!-- DEPARTMENTS (ADMIN) -->
+    <section class="page role-admin" id="page-departments">
       <div class="d-flex align-items-center justify-content-between">
         <h3 class="fw-bold mb-0">Departments</h3>
-        <button class="btn btn-success btn-sm" type="button"
-                data-bs-toggle="modal" data-bs-target="#modalAddDepartment">
-          + Add Department
-        </button>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalDepartment">+ Add Department</button>
       </div>
+
       <div class="card p-3 mt-3">
-        <div class="text-muted">(Phase 3) CRUD display can be added next phase.</div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Name</th><th>Description</th><th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tblDepartments"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -256,170 +265,163 @@
     <section class="page" id="page-requests">
       <div class="d-flex align-items-center justify-content-between">
         <h3 class="fw-bold mb-0">My Requests</h3>
-        <button class="btn btn-success btn-sm" type="button"
-                data-bs-toggle="modal" data-bs-target="#modalNewRequest">
-          + New Request
-        </button>
+        <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalNewRequest">+ New Request</button>
       </div>
+
       <div class="card p-3 mt-3">
-        <div class="text-muted">(Phase 3) CRUD display can be added next phase.</div>
+        <div id="reqEmpty" class="text-muted">You have no requests yet.</div>
+        <div class="table-responsive d-none" id="reqTableWrap">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr>
+                <th>ID</th><th>Type</th><th>Items</th><th>Date</th><th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tblRequests"></tbody>
+          </table>
+        </div>
       </div>
     </section>
 
-    <!-- ================= MODALS ================= -->
-
-    <!-- Add Employee Modal -->
-    <div class="modal fade" id="modalAddEmployee" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Employee</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <form id="formAddEmployee">
-            <div class="modal-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Employee ID</label>
-                  <input class="form-control" id="empId" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">User Email</label>
-                  <input class="form-control" id="empEmail" type="email" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Position</label>
-                  <input class="form-control" id="empPosition" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Department</label>
-                  <input class="form-control" id="empDept" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Hire Date</label>
-                  <input class="form-control" id="empHireDate" type="date" required />
-                </div>
-              </div>
-              <div class="text-muted mt-3">(Phase 3 UI) Saving can be implemented next phase.</div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary" type="submit">Save</button>
-              <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Account Modal -->
-    <div class="modal fade" id="modalAddAccount" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Account</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <form id="formAddAccount">
-            <div class="modal-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">First Name</label>
-                  <input class="form-control" id="accFirst" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Last Name</label>
-                  <input class="form-control" id="accLast" required />
-                </div>
-                <div class="col-12">
-                  <label class="form-label">Email</label>
-                  <input class="form-control" id="accEmail" type="email" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Password</label>
-                  <input class="form-control" id="accPassword" type="password" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Role</label>
-                  <select class="form-select" id="accRole" required>
-                    <option value="User">User</option>
-                    <option value="Admin">Admin</option>
-                  </select>
-                </div>
-              </div>
-              <div class="text-muted mt-3">(Phase 3 UI) Saving can be implemented next phase.</div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary" type="submit">Save</button>
-              <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- Add Department Modal -->
-    <div class="modal fade" id="modalAddDepartment" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Department</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <form id="formAddDepartment">
-            <div class="modal-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label class="form-label">Name</label>
-                  <input class="form-control" id="deptName" required />
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label">Description</label>
-                  <input class="form-control" id="deptDesc" required />
-                </div>
-              </div>
-              <div class="text-muted mt-3">(Phase 3 UI) Saving can be implemented next phase.</div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary" type="submit">Save</button>
-              <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
-    <!-- New Request Modal -->
-    <div class="modal fade" id="modalNewRequest" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">New Request</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <form id="formNewRequest">
-            <div class="modal-body">
-              <div class="mb-3">
-                <label class="form-label">Type</label>
-                <input class="form-control" id="reqType" placeholder="Equipment" required />
-              </div>
-
-              <div class="mb-2 fw-bold">Items</div>
-              <div id="reqItems"></div>
-
-              <button class="btn btn-outline-primary btn-sm mt-2" type="button" id="btnAddReqItem">+ Add Item</button>
-
-              <div class="text-muted mt-3">(Phase 3 UI) Saving can be implemented next phase.</div>
-            </div>
-            <div class="modal-footer">
-              <button class="btn btn-primary" type="submit">Submit Request</button>
-              <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-
   </main>
+
+  <!-- MODAL: Employee -->
+  <div class="modal fade" id="modalEmployee" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="formAddEmployee">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Employee</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="empId" />
+          <div class="mb-2">
+            <label class="form-label">Name</label>
+            <input class="form-control" id="empName" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Position</label>
+            <input class="form-control" id="empPos" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Department</label>
+            <select class="form-select" id="empDept" required></select>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Hire Date</label>
+            <input class="form-control" id="empHire" type="date" required />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Account -->
+  <div class="modal fade" id="modalAccount" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="formAddAccount">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Account</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">First Name</label>
+            <input class="form-control" id="accFirst" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Last Name</label>
+            <input class="form-control" id="accLast" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Email</label>
+            <input class="form-control" id="accEmail" type="email" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Password</label>
+            <input class="form-control" id="accPass" type="password" minlength="6" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Role</label>
+            <select class="form-select" id="accRole" required>
+              <option value="User">User</option>
+              <option value="Admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="accVerified">
+            <label class="form-check-label" for="accVerified">Verified</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Department -->
+  <div class="modal fade" id="modalDepartment" tabindex="-1">
+    <div class="modal-dialog">
+      <form class="modal-content" id="formAddDepartment">
+        <div class="modal-header">
+          <h5 class="modal-title">Add Department</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="deptId" />
+          <div class="mb-2">
+            <label class="form-label">Name</label>
+            <input class="form-control" id="deptName" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Description</label>
+            <input class="form-control" id="deptDesc" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: New Request -->
+  <div class="modal fade" id="modalNewRequest" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="formNewRequest">
+        <div class="modal-header">
+          <h5 class="modal-title">New Request</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-2">
+            <label class="form-label">Type</label>
+            <input class="form-control" id="reqType" placeholder="Equipment" required />
+          </div>
+
+          <div class="d-flex align-items-center justify-content-between">
+            <label class="form-label mb-0">Items</label>
+            <button class="btn btn-outline-primary btn-sm" type="button" id="btnAddReqItem">+</button>
+          </div>
+
+          <div class="mt-2" id="reqItems"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-primary" type="submit">Submit Request</button>
+          <button class="btn btn-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="script.js"></script>
